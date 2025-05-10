@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/quizpage.dart';
 
-
-
-
 void main() {
   runApp(QuizApp());
 }
@@ -20,11 +17,11 @@ class QuizApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: HomePage(
         onStartQuiz: () {
-          // Navegação para a QuizPage
+          
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => QuizPage(),  // Certifique-se de que o QuizPage está correto!
+              builder: (_) => QuizPage(),
             ),
           );
         },

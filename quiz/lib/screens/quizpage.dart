@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'finalpage.dart';
+import 'dart:async';
 
 class QuizPage extends StatefulWidget {
   @override
@@ -10,6 +11,9 @@ class _QuizPageState extends State<QuizPage> {
   int _currentQuestion = 0;
   int _score = 0;
   bool _isQuizEnded = false;
+  Timer? _timer;
+  int _secondsLeft = 15;
+
 
 
   final List<Color> _rainbowColors = [
@@ -137,66 +141,90 @@ class _QuizPageState extends State<QuizPage> {
  
   ];
 
-    void _endQuiz() {
+ void _startTimer() {
+    _timer?.cancel();
+    _secondsLeft = 15;
+
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_secondsLeft > 0) {
+          _secondsLeft--;
+        } else {
+          timer.cancel();
+          _answerQuestion(0);
+        }
+      });
+    });
+  }
+
+  void _endQuiz() {
     setState(() {
       _isQuizEnded = true;
     });
   }
 
   void _answerQuestion(int score) {
+    _timer?.cancel();
+
     setState(() {
       _score += score;
       _currentQuestion++;
 
       if (_currentQuestion >= _questions.length) {
         _endQuiz();
+      } else {
+        _startTimer();
       }
     });
   }
 
   void _resetQuiz() {
+    _timer?.cancel();
     setState(() {
       _isQuizEnded = false;
       _score = 0;
       _currentQuestion = 0;
+      _startTimer();
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(50), // Menor altura para o AppBar
-        child: AppBar(
-          title: Text(
-            _isQuizEnded
-                ? 'Quiz Finalizado'
-                : _questions[_currentQuestion]['question'] as String,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 23,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+      appBar: AppBar(
+        title: Text(
+          _isQuizEnded || _currentQuestion >= _questions.length
+              ? 'Quiz Finalizado'
+              : (_questions[_currentQuestion]['question'] as String? ?? ''),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
-          centerTitle: true,
-          backgroundColor: Colors.deepPurple,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.deepPurple, Colors.indigo],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.deepPurple, Colors.indigo],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
           ),
         ),
       ),
       body: Stack(
         children: [
-          // Imagem de fundo
           Positioned.fill(
             child: _isQuizEnded
                 ? Container()
@@ -208,13 +236,37 @@ class _QuizPageState extends State<QuizPage> {
           Padding(
             padding: const EdgeInsets.all(20),
             child: _isQuizEnded
-                ? FinalScreen(
-                    score: _score,
-                    resetQuiz: _resetQuiz,
-                  )
+                ? FinalScreen(score: _score, resetQuiz: _resetQuiz)
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            '⏱️ Tempo restante: $_secondsLeft s',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = 2
+                                ..color = Colors.black,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            '⏱️ Tempo restante: $_secondsLeft s',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
                       ...(_questions[_currentQuestion]['answers']
                               as List<Map<String, Object>>)
                           .asMap()
@@ -230,7 +282,7 @@ class _QuizPageState extends State<QuizPage> {
                                   _rainbowColors[i % _rainbowColors.length],
                               foregroundColor: Colors.black,
                               padding: EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 16), // Tamanho menor
+                                  vertical: 16, horizontal: 20),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -242,7 +294,7 @@ class _QuizPageState extends State<QuizPage> {
                               answer['text'] as String,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 23,
+                                fontSize: 18,
                               ),
                             ),
                           ),
@@ -251,30 +303,30 @@ class _QuizPageState extends State<QuizPage> {
                     ],
                   ),
           ),
-
+          
           Positioned(
-              bottom: 10,
-              left: 860,
-              right: 860,
-              child: _isQuizEnded
-                  ? Container()
-                  : Container(
-                      alignment: Alignment.center,
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Text(
-                        'Pergunta ${_currentQuestion + 1} de ${_questions.length}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+            bottom: 10,
+            left: 570,
+            right: 570,
+            child: _isQuizEnded
+                ? Container()
+                : Container(
+                    alignment: Alignment.center,
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      'Pergunta ${_currentQuestion + 1} de ${_questions.length}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-            ),
+                  ),
+          ),
         ],
       ),
     );
